@@ -1,0 +1,26 @@
+{
+  "broker_username": "someuser",
+  "broker_password": "somethingsecure",
+  "port": "8080",
+  "broker_id": "stardog-service-0A48E1D9-DCC9-4A61-8677-CB10B3C05512",
+  "plans": [
+    {
+      "name": "shared_database_plan",
+      "id": "3974D976-F3DB-494E-9EA0-EB5AB8310949",
+      "parameters": {
+        "stardog_url": "http://buzzcf1sdelb-840405597.us-west-1.elb.amazonaws.com:5821",
+        "admin_username": "admin",
+        "admin_password": "admin"
+      }
+    }
+  ],
+  "storage": {
+    "type": "stardog",
+    "parameters": {
+      "stardog_url": "http://buzzcf1sdelb-840405597.us-west-1.elb.amazonaws.com:5821",
+      "admin_username": "admin",
+      "admin_password": "admin"
+    }
+  },
+  "log_level": "DEBUG"
+}
