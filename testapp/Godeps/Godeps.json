@@ -1,0 +1,7 @@
+{
+	"ImportPath": "github.com/stardog-union/service-broker/testapp",
+	"GoVersion": "go1.7",
+	"GodepVersion": "v74",
+	"Deps": [
+	]
+}
