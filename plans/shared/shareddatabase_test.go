@@ -214,7 +214,7 @@ func TestSimpleUnitSharedDbPlan(t *testing.T) {
 	}
 	b, err := json.Marshal(&dbParams)
 	if err != nil {
-		t.Fatalf("failed to marshall the parameters %s", err)
+		t.Fatalf("failed to marshal the parameters %s", err)
 		return
 	}
 
@@ -272,7 +272,7 @@ func TestSimpleUnitSharedDbPlan(t *testing.T) {
 	dbParams2 := newDatabaseBindParameters{}
 	b2, err := json.Marshal(&dbParams2)
 	if err != nil {
-		t.Fatalf("failed to marshall the parameters %s", err)
+		t.Fatalf("failed to marshal the parameters %s", err)
 		return
 	}
 

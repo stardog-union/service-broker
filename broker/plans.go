@@ -16,7 +16,7 @@
 package broker
 
 // PlanFactory holds the information needed to create a plan instance. When
-// the instance is new MakePlan is used.  To inflate and existing instance
+// the instance is new MakePlan is used.  To inflate an existing instance
 // InflatePlan is used.
 type PlanFactory interface {
 	MakePlan(clientFactory StardogClientFactory, logger SdLogger) Plan

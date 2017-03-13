@@ -72,8 +72,6 @@ func ReadRequestBody(r *http.Request, object interface{}) error {
 
 // SendInternalError sends a bodiless HTTP error message to the client.
 func SendInternalError(w http.ResponseWriter) {
-	// send error message
-	// XXX TODO log an error
 	w.WriteHeader(http.StatusInternalServerError)
 	return
 }
