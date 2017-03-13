@@ -155,8 +155,6 @@ func (s *stardogClientImpl) AddDocument(dbName string, doc string) error {
 	h.Set("Content-Type", "application/octet-stream")
 	h.Set("Content-Transfer-Encoding", "binary")
 	io, err := bodyWriter.CreatePart(h)
-
-	//io, err := bodyWriter.CreateFormFile("upload", "docname")
 	if err != nil {
 		return fmt.Errorf("didnt make write field %s", err)
 	}
@@ -288,8 +286,7 @@ func (s *stardogClientImpl) doRequestWithAccept(method, urlStr string, body io.R
 		return nil, fmt.Errorf("Expected %d but got %d when %s to %s", expectedCode, resp.StatusCode, method, urlStr)
 	}
 	content, err := ioutil.ReadAll(resp.Body)
-	// XXX TODO the content is logged here.  Not secure
-	s.logger.Logf(INFO, "Completed %s to %s and received %s", method, urlStr, content)
+	s.logger.Logf(INFO, "Completed %s to %s", method, urlStr)
 	return content, nil
 }
 

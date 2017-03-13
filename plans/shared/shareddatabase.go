@@ -212,8 +212,8 @@ func (p *newDatabasePlan) Bind(service interface{}, parameters []byte) (int, int
 
 	e, err := client.UserExists(responseCred.Username)
 	if err != nil {
-		p.logger.Logf(broker.WARN, "Failed to check if the user exists %s", err)
-		return http.StatusInternalServerError, nil, fmt.Errorf("Failed to check if the user exists")
+		p.logger.Logf(broker.WARN, "UserExists check failed: %s", err)
+		return http.StatusInternalServerError, nil, fmt.Errorf("UserExists check failed")
 	}
 	if e {
 		return http.StatusConflict, nil, fmt.Errorf("Failed to create the user because %s already exists", responseCred.Username)

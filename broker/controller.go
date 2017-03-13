@@ -155,7 +155,7 @@ func (c *ControllerImpl) CreateServiceInstance(w http.ResponseWriter, r *http.Re
 	c.logger.Logf(DEBUG, "Adding instance to the store.")
 	err = c.store.AddInstance(serviceInstanceGUID, si)
 	if err != nil {
-		// XXX TODO Here we have to clean up the created service
+		// TODO Here we have to clean up the created service
 		c.logger.Logf(ERROR, "Failed to add the instance to the store.  Resources leaked. %s", err)
 		SendError(c.logger, w, http.StatusInternalServerError, err.Error())
 		return
