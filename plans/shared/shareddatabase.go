@@ -73,23 +73,13 @@ func GetPlanFactory(planID string, params interface{}) (broker.PlanFactory, erro
 	return &dbPlan, nil
 }
 
-func (df *dataBasePlanFactory) MakePlan(clientFactory broker.StardogClientFactory, logger broker.SdLogger) broker.Plan {
-	return &newDatabasePlan{
-		url:           df.StardogURL,
-		adminName:     df.AdminName,
-		adminPw:       df.AdminPw,
-		planID:        df.PlanID(),
-		clientFactory: clientFactory,
-		logger:        logger,
-	}
-}
-
-func (df *dataBasePlanFactory) InflatePlan(serviceInstance *broker.ServiceInstance, clientFactory broker.StardogClientFactory, logger broker.SdLogger) (broker.Plan, error) {
-	serviceParams, err := reInflateService(serviceInstance.InstanceParams)
+func (df *dataBasePlanFactory) InflatePlan(instanceParams interface{}, clientFactory broker.StardogClientFactory, logger broker.SdLogger) (broker.Plan, error) {
+	var serviceParams serviceParameters
+	err := broker.ReSerializeInterface(instanceParams, &serviceParams)
 	if err != nil {
 		return nil, err
 	}
-	serviceInstance.PlanID = df.PlanID()
+
 	p := &newDatabasePlan{
 		url:           df.StardogURL,
 		adminName:     df.AdminName,
@@ -127,12 +117,7 @@ func (df *dataBasePlanFactory) Bindable() bool {
 	return true
 }
 
-func (p *newDatabasePlan) CreateServiceInstance(parameters []byte) (int, interface{}, error) {
-	err := json.Unmarshal(parameters, &p.params)
-	if err != nil {
-		return http.StatusBadRequest, nil, fmt.Errorf("The parameters were not properly formed")
-	}
-
+func (p *newDatabasePlan) CreateServiceInstance() (int, interface{}, error) {
 	if p.params.DbName == "" {
 		p.params.DbName = broker.GetRandomName("db", 16)
 	}
@@ -145,7 +130,7 @@ func (p *newDatabasePlan) CreateServiceInstance(parameters []byte) (int, interfa
 			Password: p.adminPw})
 
 	// Create an instance database for storing bindings
-	err = client.CreateDatabase(outParams.DbName)
+	err := client.CreateDatabase(outParams.DbName)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
@@ -166,19 +151,6 @@ func (p *newDatabasePlan) RemoveInstance() (int, interface{}, error) {
 	return http.StatusOK, &broker.CreateGetServiceInstanceResponse{}, nil
 }
 
-func reInflateService(service interface{}) (*serviceParameters, error) {
-	b, err := json.Marshal(service)
-	if err != nil {
-		return nil, err
-	}
-	var sp serviceParameters
-	err = json.Unmarshal(b, &sp)
-	if err != nil {
-		return nil, err
-	}
-	return &sp, nil
-}
-
 func (p *newDatabasePlan) Bind(service interface{}, parameters []byte) (int, interface{}, error) {
 	var params newDatabaseBindParameters
 
@@ -193,7 +165,8 @@ func (p *newDatabasePlan) Bind(service interface{}, parameters []byte) (int, int
 	if params.Password == "" {
 		params.Password = broker.GetRandomName("", 24)
 	}
-	serviceParams, err := reInflateService(service)
+	var serviceParams serviceParameters
+	err = broker.ReSerializeInterface(service, &serviceParams)
 	if err != nil {
 		return http.StatusBadRequest, nil, fmt.Errorf("The plan specific parameters were poorly formed")
 	}

@@ -1,10 +1,9 @@
-.idea
-.vscode
+product/
+release/
+metadata
+.idea/
+.vscode/
 data/conf.json
-tile-history.yml
-tile.yml
-release
-stardog-service-broker
-resources
-coverage.out
 debug.test
+resources/
+stardog-service-broker
