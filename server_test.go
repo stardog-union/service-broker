@@ -30,6 +30,7 @@ import (
 
 	"github.com/stardog-union/service-broker/broker"
 	"github.com/stardog-union/service-broker/plans/shared"
+	stardogstore "github.com/stardog-union/service-broker/store/stardog"
 )
 
 var (
@@ -66,7 +67,7 @@ func getShardedDbPlanServer(sdURL string) (*testBrokerClient, error) {
 		fmt.Fprintf(os.Stderr, "Failed create the logger %s\n", err)
 		return nil, err
 	}
-	store, err := broker.NewStardogStore(conf.BrokerID, logger, conf.Storage.Parameters)
+	store, err := stardogstore.NewStardogStore(conf.BrokerID, logger, conf.Storage.Parameters)
 	if err != nil {
 		return nil, fmt.Errorf("Error setting up the data store: %s", err)
 	}
