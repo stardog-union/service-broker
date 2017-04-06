@@ -4,14 +4,11 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
+	"strings"
 
 	// Load the mysql driver
 	_ "github.com/go-sql-driver/mysql"
-
-	"fmt"
-
-	"strings"
-
 	"github.com/stardog-union/service-broker/broker"
 )
 
@@ -45,21 +42,23 @@ func getNewParameters(logger broker.SdLogger, parameters interface{}) (*mysqlNew
 	return nil, nil
 }
 
-func createMetaDatabase(driverName string, contactString string, dbName string) error {
+func createMetaDatabase(logger broker.SdLogger, driverName string, contactString string, dbName string) error {
 	dbConn, err := sql.Open(driverName, contactString)
 	if err != nil {
 		return fmt.Errorf("Failed to connect to the database: %s", err)
 	}
 	defer dbConn.Close()
 
+	logger.Logf(broker.DEBUG, "Create the database %s", dbName)
 	_, err = dbConn.Exec("CREATE DATABASE IF NOT EXISTS " + dbName)
 	if err != nil {
-		return fmt.Errorf("Failed to create to the database: %s", err)
+		return fmt.Errorf("failed to create to the database: %s", err)
 	}
 
+	logger.Logf(broker.DEBUG, "Set the database for use")
 	_, err = dbConn.Exec("USE " + dbName)
 	if err != nil {
-		return fmt.Errorf("Failed to set the database in use: %s", err)
+		return fmt.Errorf("failed to set the database in use: %s", err)
 	}
 
 	serviceTable := `CREATE TABLE IF NOT EXISTS service_instance (
@@ -68,6 +67,7 @@ func createMetaDatabase(driverName string, contactString string, dbName string) 
 		data TEXT
 	)
 	`
+	logger.Logf(broker.DEBUG, "Create the service table")
 	_, err = dbConn.Exec(serviceTable)
 	if err != nil {
 		return fmt.Errorf("Failed to create the service_instance table: %s", err)
@@ -82,6 +82,7 @@ func createMetaDatabase(driverName string, contactString string, dbName string) 
         	ON DELETE CASCADE
 	)
 	`
+	logger.Logf(broker.DEBUG, "Create the bind table")
 	_, err = dbConn.Exec(bindTable)
 	if err != nil {
 		return fmt.Errorf("Failed to create the service_instance table: %s", err)
@@ -155,7 +156,10 @@ func NewMySQLStore(BrokerID string, logger broker.SdLogger, parameters interface
 		uri = mysqlParams.ContactString
 		dbName = mysqlParams.DatabaseName
 	}
-	err = createMetaDatabase(mysqlParams.SQLDriverName, uri, dbName)
+	if dbName == "" {
+		dbName = strings.Replace(BrokerID, "-", "", -1)
+	}
+	err = createMetaDatabase(logger, mysqlParams.SQLDriverName, uri, dbName)
 	if err != nil {
 		return nil, err
 	}
