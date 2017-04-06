@@ -173,19 +173,18 @@ func TestSimpleUnitSharedDbPlan(t *testing.T) {
 		t.Fatalf("The plan description should not be null\n")
 		return
 	}
-	plan := planFactory.MakePlan(clientFactory, logger)
+	params := newDatabasePlanParameters{DbName: dbName}
+	plan, err := planFactory.InflatePlan(&params, clientFactory, logger)
+	if err != nil {
+		t.Fatalf("Failed to marshal parameters %s\n", err)
+		return
+	}
 	if plan.PlanID() != planID {
 		t.Fatalf("The plan id was not correct from the plan\n")
 		return
 	}
 
-	params := newDatabasePlanParameters{DbName: dbName}
-	paramsBytes, err := json.Marshal(&params)
-	if err != nil {
-		t.Fatalf("Failed to marshal parameters %s\n", err)
-		return
-	}
-	code, dataI, err := plan.CreateServiceInstance(paramsBytes)
+	code, dataI, err := plan.CreateServiceInstance()
 	if code != http.StatusCreated {
 		t.Fatalf("The status should be ok %s\n", err)
 		return

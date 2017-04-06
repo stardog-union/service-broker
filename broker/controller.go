@@ -120,13 +120,6 @@ func (c *ControllerImpl) CreateServiceInstance(w http.ResponseWriter, r *http.Re
 		SendError(c.logger, w, http.StatusBadRequest, fmt.Sprintf("%s is not a known plan", serviceRequest.PlanID))
 		return
 	}
-	plan := planFactory.MakePlan(c.clientFactory, c.logger)
-
-	params, err := json.Marshal(serviceRequest.Parameters)
-	if err != nil {
-		SendError(c.logger, w, http.StatusInternalServerError, err.Error())
-		return
-	}
 	existinSi, err := getServiceInstance(c, serviceInstanceGUID)
 	if existinSi != nil {
 		if compareService(existinSi, &serviceRequest) {
@@ -136,8 +129,13 @@ func (c *ControllerImpl) CreateServiceInstance(w http.ResponseWriter, r *http.Re
 		}
 		return
 	}
+	plan, err := planFactory.InflatePlan(serviceRequest.Parameters, c.clientFactory, c.logger)
+	if err != nil {
+		SendError(c.logger, w, http.StatusInternalServerError, err.Error())
+		return
+	}
 
-	code, response, err := plan.CreateServiceInstance(params)
+	code, data, err := plan.CreateServiceInstance()
 	if err != nil {
 		SendError(c.logger, w, code, err.Error())
 		return
@@ -147,7 +145,7 @@ func (c *ControllerImpl) CreateServiceInstance(w http.ResponseWriter, r *http.Re
 		Plan:             plan,
 		PlanID:           planFactory.PlanID(),
 		InstanceGUID:     serviceInstanceGUID,
-		InstanceParams:   response,
+		InstanceParams:   data,
 		OrganizationGUID: serviceRequest.OrganizationGUID,
 		SpaceGUID:        serviceRequest.SpaceGUID,
 		ServiceID:        serviceRequest.ServiceID,
@@ -368,12 +366,11 @@ func getServiceInstance(c *ControllerImpl, serviceGUID string) (*ServiceInstance
 	if !ok {
 		return nil, fmt.Errorf("The reported plan %s is unknown", serviceInstance.PlanID)
 	}
-	p, err := pf.InflatePlan(serviceInstance, c.clientFactory, c.logger)
+	p, err := pf.InflatePlan(serviceInstance.InstanceParams, c.clientFactory, c.logger)
 	if err != nil {
 		return nil, err
 	}
 	serviceInstance.Plan = p
-	serviceInstance.PlanID = p.PlanID()
 
 	return serviceInstance, nil
 }

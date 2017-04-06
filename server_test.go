@@ -182,10 +182,10 @@ func TestControllerGetCatalog(t *testing.T) {
 		}
 		if len(catalog.Services[0].Plans) != 1 {
 			return fmt.Errorf("there was not a plan")
-		}if len(catalog.Services[0].Plans[0].ID) != "" {
+		}
+		if catalog.Services[0].Plans[0].ID == "" {
 			return fmt.Errorf("there was no a plan id")
 		}
-		fmt.Printf("CATALOG %s\n", string(data))
 		return nil
 	}
 	testDriver(t, f)

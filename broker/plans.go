@@ -19,20 +19,19 @@ package broker
 // the instance is new MakePlan is used.  To inflate an existing instance
 // InflatePlan is used.
 type PlanFactory interface {
-	MakePlan(clientFactory StardogClientFactory, logger SdLogger) Plan
 	PlanName() string
 	PlanDescription() string
 	PlanID() string
 	Metadata() interface{}
 	Free() bool
 	Bindable() bool
-	InflatePlan(*ServiceInstance, StardogClientFactory, SdLogger) (Plan, error)
+	InflatePlan(interface{}, StardogClientFactory, SdLogger) (Plan, error)
 }
 
 // Plan represents a Plan that is associated with the service instance and
 // application bindings.
 type Plan interface {
-	CreateServiceInstance([]byte) (int, interface{}, error)
+	CreateServiceInstance() (int, interface{}, error)
 	RemoveInstance() (int, interface{}, error)
 	Bind(interface{}, []byte) (int, interface{}, error)
 	UnBind(interface{}) (int, error)

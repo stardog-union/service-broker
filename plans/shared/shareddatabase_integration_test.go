@@ -61,7 +61,10 @@ func getClientFactory(planID string) (broker.Plan, bool, error) {
 	if err != nil {
 		return nil, false, fmt.Errorf("error getting the plan %s", err)
 	}
-	plan := planFactory.MakePlan(clientFactory, sdLogger)
+	plan, err := planFactory.InflatePlan(&newDatabasePlanParameters{}, clientFactory, sdLogger)
+	if err != nil {
+		return nil, false, fmt.Errorf("error inflating the plan %s", err)
+	}
 	return plan, false, nil
 }
 
@@ -72,8 +75,7 @@ func TestHappyPathSharedDbPlan(t *testing.T) {
 		return
 	}
 
-	b, _ := json.Marshal(&newDatabasePlanParameters{})
-	code, serviceI, err := plan.CreateServiceInstance(b)
+	code, serviceI, err := plan.CreateServiceInstance()
 	if err != nil {
 		t.Fatalf(err.Error())
 		return
@@ -118,8 +120,7 @@ func TestSharedDbPlanRemoveTwice(t *testing.T) {
 		return
 	}
 
-	b, _ := json.Marshal(&newDatabasePlanParameters{})
-	code, _, err := plan.CreateServiceInstance(b)
+	code, _, err := plan.CreateServiceInstance()
 	if err != nil {
 		t.Fatalf(err.Error())
 		return
@@ -153,8 +154,7 @@ func TestSharedDbPlanInspectBind(t *testing.T) {
 		return
 	}
 
-	b, _ := json.Marshal(&newDatabasePlanParameters{})
-	code, serviceI, err := plan.CreateServiceInstance(b)
+	code, serviceI, err := plan.CreateServiceInstance()
 	if err != nil {
 		t.Fatalf(err.Error())
 		return
@@ -184,9 +184,7 @@ func TestSharedDbPlanConflictingDbName(t *testing.T) {
 		t.Skipf(err.Error())
 		return
 	}
-	dbName := broker.GetRandomName("testdb", 5)
-	b, _ := json.Marshal(&newDatabasePlanParameters{DbName: dbName})
-	code, _, err := plan.CreateServiceInstance(b)
+	code, _, err := plan.CreateServiceInstance()
 	if err != nil {
 		t.Fatalf(err.Error())
 		return
@@ -195,7 +193,7 @@ func TestSharedDbPlanConflictingDbName(t *testing.T) {
 		t.Fatalf("Create service returned an unsuccessful code %d", code)
 		return
 	}
-	code, _, err = plan.CreateServiceInstance(b)
+	code, _, err = plan.CreateServiceInstance()
 	if err == nil || code == http.StatusCreated {
 		t.Fatalf("The second create should have failed")
 		return
@@ -217,8 +215,7 @@ func TestSharedDbPlanBindTwice(t *testing.T) {
 		return
 	}
 
-	b, _ := json.Marshal(&newDatabasePlanParameters{})
-	code, serviceI, err := plan.CreateServiceInstance(b)
+	code, serviceI, err := plan.CreateServiceInstance()
 	if err != nil {
 		t.Fatalf(err.Error())
 		return
@@ -273,8 +270,7 @@ func TestSharedDbPlanUnbindTwice(t *testing.T) {
 		return
 	}
 
-	b, _ := json.Marshal(&newDatabasePlanParameters{})
-	code, serviceI, err := plan.CreateServiceInstance(b)
+	code, serviceI, err := plan.CreateServiceInstance()
 	if err != nil {
 		t.Fatalf(err.Error())
 		return
