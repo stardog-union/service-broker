@@ -83,6 +83,18 @@ func (c *fakeClient) CreateDatabase(dbName string) error {
 	return nil
 }
 
+func (c *fakeClient) GetDatabaseSize(dbName string) (int, error) {
+	return 0, nil
+}
+
+func (c *fakeClient) AddData(dbName string, format string, data string) error {
+	return nil
+}
+
+func (c *fakeClient) Query(dbName string, data string) ([]byte, error) {
+	return nil, nil
+}
+
 func (c *fakeClient) DeleteDatabase(dbName string) error {
 	c.factory.deleteDb = append(c.factory.deleteDb, fakeClientCommands{dbName: dbName})
 	if c.factory.failures["DeleteDatabase"] {

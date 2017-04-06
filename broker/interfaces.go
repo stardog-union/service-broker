@@ -34,6 +34,9 @@ type StardogClient interface {
 	DeleteUser(string) error
 	GrantUserAccessToDb(string, string) error
 	RevokeUserAccess(string, string) error
+	GetDatabaseSize(dbName string) (int, error)
+	AddData(dbName string, format string, data string) error
+	Query(dbName string, data string) ([]byte, error)
 }
 
 // Controller object handles the HTTP network API calls.

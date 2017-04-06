@@ -13,27 +13,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package broker
+package stardog
 
 import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+
+	"github.com/stardog-union/service-broker/broker"
 )
 
-type instanceWrapper struct {
-	inst       *ServiceInstance
-	bindingMap map[string]*BindInstance
-}
-
-type inMemoryStore struct {
-	instanceMap map[string]*instanceWrapper
-	logger      SdLogger
-}
-
 type stardogStore struct {
-	client *stardogClientImpl
-	logger SdLogger
+	client broker.StardogClient
+	logger broker.SdLogger
 	dbName string
 }
 
@@ -56,15 +48,6 @@ type boolReply struct {
 	Boolean bool                `json:"boolean"`
 }
 
-// NewInMemoryStore creates a Store object that only keeps information
-// in main memory.  This is used for testing.
-func NewInMemoryStore(logger SdLogger) Store {
-	return &inMemoryStore{
-		instanceMap: make(map[string]*instanceWrapper),
-		logger:      logger,
-	}
-}
-
 type stardogMetadataStore struct {
 	StardogURL string `json:"stardog_url"`
 	AdminName  string `json:"admin_username"`
@@ -73,33 +56,32 @@ type stardogMetadataStore struct {
 
 // NewStardogStore creates a Store object that will persist the broker information to a
 // Stardog database.
-func NewStardogStore(BrokerID string, logger SdLogger, parameters interface{}) (Store, error) {
+func NewStardogStore(BrokerID string, logger broker.SdLogger, parameters interface{}) (broker.Store, error) {
 	var sdStoreParameters stardogMetadataStore
-	err := ReSerializeInterface(parameters, &sdStoreParameters)
+	err := broker.ReSerializeInterface(parameters, &sdStoreParameters)
 	if err != nil {
 		return nil, err
 	}
 
-	logger.Logf(DEBUG, "Setting up persist with params %s", parameters)
-	logger.Logf(DEBUG, "Setting up persist with @@ %s", sdStoreParameters)
+	logger.Logf(broker.DEBUG, "Setting up persist with params %s", parameters)
+	logger.Logf(broker.DEBUG, "Setting up persist with @@ %s", sdStoreParameters)
 
 	// Create database for storing instance info
-	client := stardogClientImpl{
-		sdURL: sdStoreParameters.StardogURL,
-		dbCreds: DatabaseCredentials{
+	client := broker.NewStardogClient(
+		sdStoreParameters.StardogURL,
+		broker.DatabaseCredentials{
 			Username: sdStoreParameters.AdminName,
 			Password: sdStoreParameters.AdminPw,
 		},
-		logger: logger,
-	}
+		logger)
 	sdStore := stardogStore{
-		client: &client,
+		client: client,
 		logger: logger,
 	}
 	sdStore.dbName = fmt.Sprintf("metadata%s", BrokerID)
 	_, err = client.GetDatabaseSize(sdStore.dbName)
 	if err != nil {
-		logger.Logf(INFO, "The database %s does not exist.  Try making it: %s|", sdStore.dbName, client.sdURL)
+		logger.Logf(broker.INFO, "The database %s does not exist.  Try making it: %s|", sdStore.dbName, sdStoreParameters.StardogURL)
 		err := client.CreateDatabase(sdStore.dbName)
 		if err != nil {
 			return nil, err
@@ -109,7 +91,7 @@ func NewStardogStore(BrokerID string, logger SdLogger, parameters interface{}) (
 	return &sdStore, nil
 }
 
-func (s *stardogStore) AddInstance(id string, instance *ServiceInstance) error {
+func (s *stardogStore) AddInstance(id string, instance *broker.ServiceInstance) error {
 	instanceData, err := json.Marshal(instance)
 	if err != nil {
 		return nil
@@ -127,7 +109,7 @@ func (s *stardogStore) AddInstance(id string, instance *ServiceInstance) error {
 	return err
 }
 
-func (s *stardogStore) GetInstance(id string) (*ServiceInstance, error) {
+func (s *stardogStore) GetInstance(id string) (*broker.ServiceInstance, error) {
 	qS := `
 	PREFIX sdcf: <http://github.com/stardog-union/service-broker/>
 
@@ -159,7 +141,7 @@ select ?instance_data where {
 	if err != nil {
 		return nil, err
 	}
-	var si ServiceInstance
+	var si broker.ServiceInstance
 	err = json.Unmarshal(siB, &si)
 	if err != nil {
 		return nil, err
@@ -182,7 +164,7 @@ func (s *stardogStore) DeleteInstance(id string) error {
 	return nil
 }
 
-func (s *stardogStore) GetAllBindings(instanceID string) (map[string]*BindInstance, error) {
+func (s *stardogStore) GetAllBindings(instanceID string) (map[string]*broker.BindInstance, error) {
 	q := `PREFIX sdcf: <http://github.com/stardog-union/service-broker/>
 select ?data_binding where {
   ?instance sdcf:isa sdcf:instance .
@@ -200,7 +182,7 @@ select ?data_binding where {
 	if err != nil {
 		return nil, err
 	}
-	outRes := make(map[string]*BindInstance)
+	outRes := make(map[string]*broker.BindInstance)
 
 	for _, v := range res.Results.Bindings {
 		encodedEnt, ok := v["data_binding"]
@@ -211,7 +193,7 @@ select ?data_binding where {
 		if err != nil {
 			return nil, err
 		}
-		var bi BindInstance
+		var bi broker.BindInstance
 		err = json.Unmarshal(decoded, &bi)
 		if err != nil {
 			return nil, err
@@ -222,7 +204,7 @@ select ?data_binding where {
 	return outRes, nil
 }
 
-func (s *stardogStore) AddBinding(instanceID string, bindingID string, bindInstance *BindInstance) error {
+func (s *stardogStore) AddBinding(instanceID string, bindingID string, bindInstance *broker.BindInstance) error {
 	_, err := s.GetInstance(instanceID)
 	if err != nil {
 		return err
@@ -267,7 +249,7 @@ func (s *stardogStore) DeleteBinding(instanceID string, bindingID string) error 
 	return nil
 }
 
-func (s *stardogStore) GetBinding(instanceID string, bindingID string) (*BindInstance, error) {
+func (s *stardogStore) GetBinding(instanceID string, bindingID string) (*broker.BindInstance, error) {
 	q := `PREFIX sdcf: <http://github.com/stardog-union/service-broker/>
 select ?data_binding where {
   ?instance sdcf:isa sdcf:instance .
@@ -297,89 +279,10 @@ select ?data_binding where {
 	if err != nil {
 		return nil, err
 	}
-	var bi BindInstance
+	var bi broker.BindInstance
 	err = json.Unmarshal(decoded, &bi)
 	if err != nil {
 		return nil, err
 	}
 	return &bi, nil
-}
-
-func (m *inMemoryStore) AddInstance(id string, instance *ServiceInstance) error {
-	inst := m.instanceMap[id]
-	if inst != nil {
-		return fmt.Errorf("The instance already exists")
-	}
-	w := &instanceWrapper{
-		inst:       instance,
-		bindingMap: make(map[string]*BindInstance),
-	}
-	m.instanceMap[id] = w
-	m.logger.Logf(INFO, "Added instance %s", id)
-	return nil
-}
-
-func (m *inMemoryStore) GetInstance(id string) (*ServiceInstance, error) {
-	w := m.instanceMap[id]
-	if w == nil {
-		return nil, fmt.Errorf("The instance does not exists")
-	}
-	return w.inst, nil
-}
-
-func (m *inMemoryStore) DeleteInstance(id string) error {
-	w := m.instanceMap[id]
-	if w == nil {
-		return fmt.Errorf("The instance does not exists")
-	}
-	delete(m.instanceMap, id)
-	return nil
-}
-
-func (m *inMemoryStore) GetAllBindings(instanceID string) (map[string]*BindInstance, error) {
-	w := m.instanceMap[instanceID]
-	if w == nil {
-		return nil, fmt.Errorf("The instance does not exists")
-	}
-	return w.bindingMap, nil
-}
-
-func (m *inMemoryStore) AddBinding(instanceID string, bindingID string, bindInstance *BindInstance) error {
-	w := m.instanceMap[instanceID]
-	if w == nil {
-		return fmt.Errorf("The instance does not exists %s", instanceID)
-	}
-	b := w.bindingMap[bindingID]
-	if b != nil {
-		return fmt.Errorf("The binding already exists %s", bindingID)
-	}
-	m.logger.Logf(INFO, "Memory store binding %s %s", instanceID, bindingID)
-	w.bindingMap[bindingID] = bindInstance
-	return nil
-}
-
-func (m *inMemoryStore) DeleteBinding(instanceID string, bindingID string) error {
-	w := m.instanceMap[instanceID]
-	if w == nil {
-		return fmt.Errorf("The instance does not exists %s", instanceID)
-	}
-	b := w.bindingMap[bindingID]
-	if b == nil {
-		return fmt.Errorf("The binding does not exists %s", bindingID)
-	}
-	m.logger.Logf(INFO, "Memory store deleted binding %s %s", instanceID, bindingID)
-	delete(w.bindingMap, bindingID)
-	return nil
-}
-
-func (m *inMemoryStore) GetBinding(instanceID string, bindingID string) (*BindInstance, error) {
-	w := m.instanceMap[instanceID]
-	if w == nil {
-		return nil, fmt.Errorf("The instance does not exists")
-	}
-	b := w.bindingMap[bindingID]
-	if b == nil {
-		return nil, fmt.Errorf("The binding does not exists")
-	}
-	return b, nil
 }

@@ -164,3 +164,12 @@ type StorageConfig struct {
 	Type       string      `json:"type"`
 	Parameters interface{} `json:"parameters"`
 }
+
+// VCAPService is used to decode a cloud foundry environment.
+type VCAPService struct {
+	Credentials map[string]interface{} `json:"credentials"`
+	Label       string                 `json:"label"`
+	Plan        string                 `json:"plan"`
+	Name        string                 `json:"name"`
+	Tags        []string               `json:"tags"`
+}

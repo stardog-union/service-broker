@@ -24,6 +24,9 @@ import (
 
 	"github.com/stardog-union/service-broker/broker"
 	"github.com/stardog-union/service-broker/plans/shared"
+	_ "github.com/stardog-union/service-broker/store/sql"
+	storesql "github.com/stardog-union/service-broker/store/sql"
+	storestardog "github.com/stardog-union/service-broker/store/stardog"
 )
 
 func handlePlugins(conf *broker.ServerConfig) (map[string]broker.PlanFactory, error) {
@@ -95,9 +98,21 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error parsing the configuration: %s\n", err)
 		os.Exit(2)
 	}
-	store, err := broker.NewStardogStore(conf.BrokerID, logger, conf.Storage.Parameters)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error setting up the data store: %s\n", err)
+	var store broker.Store
+	if conf.Storage.Type == "stardog" {
+		store, err = storestardog.NewStardogStore(conf.BrokerID, logger, conf.Storage.Parameters)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error setting up the data store: %s\n", err)
+			os.Exit(3)
+		}
+	} else if conf.Storage.Type == "sql" {
+		store, err = storesql.NewMySQLStore(conf.BrokerID, logger, conf.Storage.Parameters)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error setting up the data store: %s\n", err)
+			os.Exit(3)
+		}
+	} else {
+		fmt.Fprintf(os.Stderr, "The datastore %s is not supported.\n", conf.Storage.Type)
 		os.Exit(3)
 	}
 

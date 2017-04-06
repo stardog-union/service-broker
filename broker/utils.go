@@ -25,6 +25,8 @@ import (
 	"strings"
 	"time"
 
+	"os"
+
 	"github.com/gorilla/mux"
 )
 
@@ -157,6 +159,20 @@ func ReSerializeInterface(in interface{}, out interface{}) error {
 		return err
 	}
 	return nil
+}
+
+// GetVCAPServices is used in Cloud Foundry environments to pull out bound service information
+func GetVCAPServices() (map[string][]VCAPService, error) {
+	envStr := os.Getenv("VCAP_SERVICES")
+	if envStr == "" {
+		return nil, fmt.Errorf("VCAP_SERVICES is not set")
+	}
+	services := make(map[string][]VCAPService)
+	err := json.Unmarshal([]byte(envStr), &services)
+	if err != nil {
+		return nil, err
+	}
+	return services, nil
 }
 
 func init() {

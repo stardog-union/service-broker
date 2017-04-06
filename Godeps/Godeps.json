@@ -4,6 +4,11 @@
 	"GodepVersion": "v74",
 	"Deps": [
 		{
+			"ImportPath": "github.com/go-sql-driver/mysql",
+			"Comment": "v1.3-6-g9dee4ca",
+			"Rev": "9dee4ca50b83acdf57a35fb9e6fb4be640afa2f3"
+		},
+		{
 			"ImportPath": "github.com/gorilla/mux",
 			"Comment": "v1.3.0",
 			"Rev": "392c28fe23e1c45ddba891b0320b3b5df220beea"
