@@ -150,6 +150,9 @@ func HTTPBasicCheck(r *http.Request, w http.ResponseWriter, username string, pas
 // type.  This is basically a work around to how Go deals with JSON
 // objects and allows us to have plugs that define their own JSON types.
 func ReSerializeInterface(in interface{}, out interface{}) error {
+	if in == nil {
+		in = make(map[string]interface{})
+	}
 	b, err := json.Marshal(in)
 	if err != nil {
 		return err

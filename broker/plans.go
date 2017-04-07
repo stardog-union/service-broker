@@ -33,7 +33,7 @@ type PlanFactory interface {
 type Plan interface {
 	CreateServiceInstance() (int, interface{}, error)
 	RemoveInstance() (int, interface{}, error)
-	Bind(interface{}, []byte) (int, interface{}, error)
+	Bind(interface{}) (int, interface{}, error)
 	UnBind(interface{}) (int, error)
 	PlanID() string
 	EqualInstance(interface{}) bool

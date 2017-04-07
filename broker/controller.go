@@ -18,7 +18,6 @@
 package broker
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 )
@@ -269,12 +268,6 @@ func (c *ControllerImpl) Bind(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	params, err := json.Marshal(bindRequest.Parameters)
-	if err != nil {
-		SendError(c.logger, w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
 	serviceBinding, err := c.store.GetBinding(serviceInstanceGUID, serviceBindingGUID)
 	if serviceBinding != nil {
 		if serviceInstance.Plan.EqualBinding(serviceBinding, &bindRequest) {
@@ -285,7 +278,7 @@ func (c *ControllerImpl) Bind(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	code, response, err := serviceInstance.Plan.Bind(serviceInstance.InstanceParams, params)
+	code, response, err := serviceInstance.Plan.Bind(bindRequest.Parameters)
 	if err != nil {
 		SendError(c.logger, w, code, err.Error())
 		return

@@ -151,10 +151,10 @@ func (p *newDatabasePlan) RemoveInstance() (int, interface{}, error) {
 	return http.StatusOK, &broker.CreateGetServiceInstanceResponse{}, nil
 }
 
-func (p *newDatabasePlan) Bind(service interface{}, parameters []byte) (int, interface{}, error) {
+func (p *newDatabasePlan) Bind(parameters interface{}) (int, interface{}, error) {
 	var params newDatabaseBindParameters
 
-	err := json.Unmarshal(parameters, &params)
+	err := broker.ReSerializeInterface(parameters, &params)
 	if err != nil {
 		return http.StatusBadRequest, nil, fmt.Errorf("The parameters were not properly formed")
 	}
@@ -165,11 +165,6 @@ func (p *newDatabasePlan) Bind(service interface{}, parameters []byte) (int, int
 	if params.Password == "" {
 		params.Password = broker.GetRandomName("", 24)
 	}
-	var serviceParams serviceParameters
-	err = broker.ReSerializeInterface(service, &serviceParams)
-	if err != nil {
-		return http.StatusBadRequest, nil, fmt.Errorf("The plan specific parameters were poorly formed")
-	}
 
 	client := p.clientFactory.GetStardogAdminClient(
 		p.url,
@@ -179,7 +174,7 @@ func (p *newDatabasePlan) Bind(service interface{}, parameters []byte) (int, int
 	responseCred := NewDatabaseBindResponse{
 		Username:   params.Username,
 		Password:   params.Password,
-		DbName:     serviceParams.DbName,
+		DbName:     p.params.DbName,
 		StardogURL: p.url,
 	}
 

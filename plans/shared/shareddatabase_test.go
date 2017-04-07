@@ -16,7 +16,6 @@
 package shared
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -223,13 +222,7 @@ func TestSimpleUnitSharedDbPlan(t *testing.T) {
 		Username: username,
 		Password: password,
 	}
-	b, err := json.Marshal(&dbParams)
-	if err != nil {
-		t.Fatalf("failed to marshal the parameters %s", err)
-		return
-	}
-
-	code, bindDataI, err := plan.Bind(dataI, b)
+	code, bindDataI, err := plan.Bind(&dbParams)
 	if code != http.StatusOK {
 		t.Fatalf("The status should be ok after bind %s", err)
 		return
@@ -281,13 +274,7 @@ func TestSimpleUnitSharedDbPlan(t *testing.T) {
 
 	// bind 2
 	dbParams2 := newDatabaseBindParameters{}
-	b2, err := json.Marshal(&dbParams2)
-	if err != nil {
-		t.Fatalf("failed to marshal the parameters %s", err)
-		return
-	}
-
-	code, bindDataI2, err := plan.Bind(dataI, b2)
+	code, bindDataI2, err := plan.Bind(&dbParams2)
 	if code != http.StatusOK {
 		t.Fatalf("The status should be ok after bind %s", err)
 		return

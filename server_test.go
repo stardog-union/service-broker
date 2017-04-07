@@ -45,6 +45,7 @@ type testBrokerClient struct {
 	username  string
 	password  string
 	conf      broker.ServerConfig
+	planName  string
 }
 
 type getPlanFunc func() (*testBrokerClient, error)
@@ -108,12 +109,13 @@ func getShardedDbPlanServer() (*testBrokerClient, error) {
 		username:  conf.BrokerUsername,
 		password:  conf.BrokerPassword,
 		conf:      conf,
+		planName:  "shared_database_plan",
 	}
 
 	return &c, nil
 }
 
-func getShardedDbMySqlPlanServer() (*testBrokerClient, error) {
+func getShardedDbMySQLPlanServer() (*testBrokerClient, error) {
 	sdURL := os.Getenv(TESTURL_ENV)
 	if sdURL == "" {
 		return nil, nil
@@ -177,6 +179,7 @@ func getShardedDbMySqlPlanServer() (*testBrokerClient, error) {
 		username:  conf.BrokerUsername,
 		password:  conf.BrokerPassword,
 		conf:      conf,
+		planName:  "shared_database_plan",
 	}
 
 	return &c, nil
@@ -270,7 +273,7 @@ func TestControllerGetCatalog(t *testing.T) {
 }
 
 func TestControllerGetCatalogSql(t *testing.T) {
-	testDriver(t, controllerGetCatalog, getShardedDbMySqlPlanServer)
+	testDriver(t, controllerGetCatalog, getShardedDbMySQLPlanServer)
 }
 
 func controllerGetCatalogBadCreds(c *testBrokerClient) error {
@@ -285,7 +288,7 @@ func TestControllerGetCatalogBadCreds(t *testing.T) {
 }
 
 func TestControllerGetCatalogBadCredsSql(t *testing.T) {
-	testDriver(t, controllerGetCatalogBadCreds, getShardedDbMySqlPlanServer)
+	testDriver(t, controllerGetCatalogBadCreds, getShardedDbMySQLPlanServer)
 }
 
 func controllerMakeBadPlan(c *testBrokerClient) error {
@@ -317,7 +320,7 @@ func TestControllerMakeBadPlan(t *testing.T) {
 }
 
 func TestControllerMakeBadPlanSql(t *testing.T) {
-	testDriver(t, controllerMakeBadPlan, getShardedDbMySqlPlanServer)
+	testDriver(t, controllerMakeBadPlan, getShardedDbMySQLPlanServer)
 }
 
 func controllerMakeDeleteInstance(c *testBrokerClient) error {
@@ -363,7 +366,7 @@ func TestControllerMakeDeleteInstance(t *testing.T) {
 }
 
 func TestControllerMakeDeleteInstanceSql(t *testing.T) {
-	testDriver(t, controllerMakeDeleteInstance, getShardedDbMySqlPlanServer)
+	testDriver(t, controllerMakeDeleteInstance, getShardedDbMySQLPlanServer)
 }
 
 func controllerBindNoService(c *testBrokerClient) error {
@@ -394,7 +397,7 @@ func TestControllerBindNoService(t *testing.T) {
 }
 
 func TestControllerBindNoServiceSql(t *testing.T) {
-	testDriver(t, controllerBindNoService, getShardedDbMySqlPlanServer)
+	testDriver(t, controllerBindNoService, getShardedDbMySQLPlanServer)
 }
 
 func controllerDeleteBindNoService(c *testBrokerClient) error {
@@ -425,7 +428,7 @@ func TestControllerDeleteBindNoService(t *testing.T) {
 }
 
 func TestControllerDeleteBindNoServiceSql(t *testing.T) {
-	testDriver(t, controllerDeleteBindNoService, getShardedDbMySqlPlanServer)
+	testDriver(t, controllerDeleteBindNoService, getShardedDbMySQLPlanServer)
 }
 
 func controllerDeleteBindServiceExists(c *testBrokerClient) error {
@@ -484,7 +487,7 @@ func TestControllerDeleteBindServiceExists(t *testing.T) {
 }
 
 func TestControllerDeleteBindServiceExistsSql(t *testing.T) {
-	testDriver(t, controllerDeleteBindServiceExists, getShardedDbMySqlPlanServer)
+	testDriver(t, controllerDeleteBindServiceExists, getShardedDbMySQLPlanServer)
 }
 
 func controllerBindServiceExists(c *testBrokerClient) error {
@@ -566,7 +569,7 @@ func TestControllerBindServiceExists(t *testing.T) {
 }
 
 func TestControllerBindServiceExistsSql(t *testing.T) {
-	testDriver(t, controllerBindServiceExists, getShardedDbMySqlPlanServer)
+	testDriver(t, controllerBindServiceExists, getShardedDbMySQLPlanServer)
 }
 
 func controllerBindServiceTwice(c *testBrokerClient) error {
@@ -674,7 +677,7 @@ func TestControllerBindServiceTwice(t *testing.T) {
 }
 
 func TestControllerBindServiceTwiceSql(t *testing.T) {
-	testDriver(t, controllerBindServiceTwice, getShardedDbMySqlPlanServer)
+	testDriver(t, controllerBindServiceTwice, getShardedDbMySQLPlanServer)
 }
 
 func controllerMakeInstanceTwiceSame(c *testBrokerClient) error {
@@ -722,7 +725,7 @@ func TestControllerMakeInstanceTwiceSame(t *testing.T) {
 }
 
 func TestControllerMakeInstanceTwiceSameMySql(t *testing.T) {
-	testDriver(t, controllerMakeInstanceTwiceSame, getShardedDbMySqlPlanServer)
+	testDriver(t, controllerMakeInstanceTwiceSame, getShardedDbMySQLPlanServer)
 }
 
 func controllerMakeInstanceTwiceDiff(c *testBrokerClient) error {
@@ -781,7 +784,7 @@ func TestControllerMakeInstanceTwiceDiff(t *testing.T) {
 }
 
 func TestControllerMakeInstanceTwiceDiffMySql(t *testing.T) {
-	testDriver(t, controllerMakeInstanceTwiceDiff, getShardedDbMySqlPlanServer)
+	testDriver(t, controllerMakeInstanceTwiceDiff, getShardedDbMySQLPlanServer)
 }
 
 func controllerMakeInstanceTwiceDiffParams(c *testBrokerClient) error {
@@ -836,7 +839,7 @@ func TestControllerMakeInstanceTwiceDiffParams(t *testing.T) {
 }
 
 func TestControllerMakeInstanceTwiceDiffParamsMySql(t *testing.T) {
-	testDriver(t, controllerMakeInstanceTwiceDiffParams, getShardedDbMySqlPlanServer)
+	testDriver(t, controllerMakeInstanceTwiceDiffParams, getShardedDbMySQLPlanServer)
 }
 
 func controllerBindServiceTwiceSame(c *testBrokerClient) error {
@@ -911,7 +914,7 @@ func TestControllerBindServiceTwiceSame(t *testing.T) {
 }
 
 func TestControllerBindServiceTwiceSameySql(t *testing.T) {
-	testDriver(t, controllerBindServiceTwiceSame, getShardedDbMySqlPlanServer)
+	testDriver(t, controllerBindServiceTwiceSame, getShardedDbMySQLPlanServer)
 }
 
 func controllerBindServiceTwiceDiff(c *testBrokerClient) error {
@@ -992,5 +995,5 @@ func TestControllerBindServiceTwiceDiff(t *testing.T) {
 }
 
 func TestControllerBindServiceTwiceDiffMySql(t *testing.T) {
-	testDriver(t, controllerBindServiceTwiceDiff, getShardedDbMySqlPlanServer)
+	testDriver(t, controllerBindServiceTwiceDiff, getShardedDbMySQLPlanServer)
 }
