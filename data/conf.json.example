@@ -11,6 +11,10 @@
         "admin_username": "admin",
         "admin_password": "admin"
       }
+    },
+    {
+      "name": "perinstance",
+      "id": "973F5836-4886-4755-B346-95E343F9113A"
     }
   ],
   "storage": {

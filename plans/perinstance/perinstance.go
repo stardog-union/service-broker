@@ -1,4 +1,3 @@
-//
 //  Copyright (c) 2017, Stardog Union. <http://stardog.com>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,10 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package shared
+package perinstance
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -43,7 +41,7 @@ type perInstanceDatabasePlan struct {
 }
 
 // NewDatabaseBindResponse is the response document that is returned from the Bind call
-type NewDatabaseBindResponse struct {
+type BindResponse struct {
 	DbName     string `json:"db_name"`
 	StardogURL string `json:"url"`
 	Password   string `json:"password"`
@@ -76,10 +74,10 @@ func (df *perInstancePlanFactory) InflatePlan(instanceParams interface{}, client
 	}
 
 	if serviceParams.StardogURL == "" {
-		return http.StatusBadRequest, nil, fmt.Errorf("A Stardog URL is required")
+		return nil, fmt.Errorf("A Stardog URL is required")
 	}
 	if serviceParams.Password == "" {
-		return http.StatusBadRequest, nil, fmt.Errorf("An admin password is required")
+		return nil, fmt.Errorf("An admin password is required")
 	}
 	if serviceParams.Username == "" {
 		serviceParams.Username = "admin"
@@ -122,37 +120,37 @@ func (df *perInstancePlanFactory) Bindable() bool {
 
 func (p *perInstanceDatabasePlan) CreateServiceInstance() (int, interface{}, error) {
 	client := p.clientFactory.GetStardogAdminClient(
-		p.params.StardogURL,
+		p.param.StardogURL,
 		broker.DatabaseCredentials{
-			Username: p.params.Username,
-			Password: p.params.Password})
+			Username: p.param.Username,
+			Password: p.param.Password})
 
 	// Create an instance database for storing bindings
-	err = client.CreateDatabase(p.params.DbName)
+	err := client.CreateDatabase(p.param.DbName)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
-	return http.StatusCreated, p.params, nil
+	return http.StatusCreated, p.param, nil
 }
 
 func (p *perInstanceDatabasePlan) RemoveInstance() (int, interface{}, error) {
 	// Delete the db if it was created
 	client := p.clientFactory.GetStardogAdminClient(
-		p.StardogURL,
+		p.param.StardogURL,
 		broker.DatabaseCredentials{
-			Username: p.,
-			Password: p.adminPw})
-	err := client.DeleteDatabase(p.params.DbName)
+			Username: p.param.Username,
+			Password: p.param.Password})
+	err := client.DeleteDatabase(p.param.DbName)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
 	return http.StatusOK, &broker.CreateGetServiceInstanceResponse{}, nil
 }
 
-func (p *newDatabasePlan) Bind(service interface{}, parameters []byte) (int, interface{}, error) {
+func (p *perInstanceDatabasePlan) Bind(parameters interface{}) (int, interface{}, error) {
 	var params newDatabaseBindParameters
 
-	err := json.Unmarshal(parameters, &params)
+	err := broker.ReSerializeInterface(parameters, &params)
 	if err != nil {
 		return http.StatusBadRequest, nil, fmt.Errorf("The parameters were not properly formed")
 	}
@@ -163,21 +161,17 @@ func (p *newDatabasePlan) Bind(service interface{}, parameters []byte) (int, int
 	if params.Password == "" {
 		params.Password = broker.GetRandomName("", 24)
 	}
-	serviceParams, err := reInflateService(service)
-	if err != nil {
-		return http.StatusBadRequest, nil, fmt.Errorf("The plan specific parameters were poorly formed")
-	}
 
 	client := p.clientFactory.GetStardogAdminClient(
-		p.url,
+		p.param.StardogURL,
 		broker.DatabaseCredentials{
-			Username: p.adminName,
-			Password: p.adminPw})
-	responseCred := NewDatabaseBindResponse{
+			Username: p.param.Username,
+			Password: p.param.Password})
+	responseCred := BindResponse{
 		Username:   params.Username,
 		Password:   params.Password,
-		DbName:     serviceParams.DbName,
-		StardogURL: p.url,
+		DbName:     p.param.DbName,
+		StardogURL: p.param.StardogURL,
 	}
 
 	e, err := client.UserExists(responseCred.Username)
@@ -201,66 +195,55 @@ func (p *newDatabasePlan) Bind(service interface{}, parameters []byte) (int, int
 	return http.StatusOK, &responseCred, nil
 }
 
-func bindingInflate(binding interface{}) (*NewDatabaseBindResponse, error) {
-	b, err := json.Marshal(binding)
-	if err != nil {
-		return nil, err
-	}
-	var bp NewDatabaseBindResponse
-	err = json.Unmarshal(b, &bp)
-	if err != nil {
-		return nil, err
-	}
-	return &bp, nil
-}
-
-func (p *newDatabasePlan) UnBind(binding interface{}) (int, error) {
-	client := p.clientFactory.GetStardogAdminClient(p.url,
+func (p *perInstanceDatabasePlan) UnBind(binding interface{}) (int, error) {
+	var bindResponse BindResponse
+	client := p.clientFactory.GetStardogAdminClient(p.param.StardogURL,
 		broker.DatabaseCredentials{
-			Username: p.adminName,
-			Password: p.adminPw})
-	serviceBinding, err := bindingInflate(binding)
+			Username: p.param.Username,
+			Password: p.param.Password})
+
+	err := broker.ReSerializeInterface(binding, &bindResponse)
 	if err != nil {
 		p.logger.Logf(broker.WARN, "Failed to inflate the parameters %s", err)
 		return http.StatusInternalServerError, err
 	}
-	err = client.RevokeUserAccess(serviceBinding.DbName, serviceBinding.Username)
+	err = client.RevokeUserAccess(bindResponse.DbName, bindResponse.Username)
 	if err != nil {
 		p.logger.Logf(broker.WARN, "Failed to revoke user accesss %s", err)
 		return http.StatusInternalServerError, err
 	}
 
-	err = client.DeleteUser(serviceBinding.Username)
+	err = client.DeleteUser(bindResponse.Username)
 	if err != nil {
-		p.logger.Logf(broker.WARN, "Failed to delete user %s: %s", serviceBinding.Username, err)
+		p.logger.Logf(broker.WARN, "Failed to delete user %s: %s", bindResponse.Username, err)
 		return http.StatusInternalServerError, err
 	}
 	return http.StatusOK, nil
 }
 
-func (p *newDatabasePlan) PlanID() string {
+func (p *perInstanceDatabasePlan) PlanID() string {
 	return p.planID
 }
 
-func (p *newDatabasePlan) EqualInstance(requestParamsI interface{}) bool {
-	var requestParams newDatabasePlanParameters
+func (p *perInstanceDatabasePlan) EqualInstance(requestParamsI interface{}) bool {
+	var bindResponse BindResponse
 
-	err := broker.ReSerializeInterface(requestParamsI, &requestParams)
+	err := broker.ReSerializeInterface(requestParamsI, &bindResponse)
 	if err != nil {
 		return false
 	}
 
-	return requestParams.DbName == p.params.DbName
+	return bindResponse.DbName == p.param.DbName
 }
 
-func (p *newDatabasePlan) EqualBinding(bindInstance *broker.BindInstance, bindRequest *broker.BindRequest) bool {
+func (p *perInstanceDatabasePlan) EqualBinding(bindInstance *broker.BindInstance, bindRequest *broker.BindRequest) bool {
 	var bindParams newDatabaseBindParameters
 
 	err := broker.ReSerializeInterface(bindRequest.Parameters, &bindParams)
 	if err != nil {
 		return false
 	}
-	var bindInstanceParams NewDatabaseBindResponse
+	var bindInstanceParams BindResponse
 	err = broker.ReSerializeInterface(bindInstance.PlanParams, &bindInstanceParams)
 	if err != nil {
 		return false

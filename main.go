@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/stardog-union/service-broker/broker"
+	"github.com/stardog-union/service-broker/plans/perinstance"
 	"github.com/stardog-union/service-broker/plans/shared"
 	_ "github.com/stardog-union/service-broker/store/sql"
 	storesql "github.com/stardog-union/service-broker/store/sql"
@@ -39,7 +40,12 @@ func handlePlugins(conf *broker.ServerConfig) (map[string]broker.PlanFactory, er
 				return nil, err
 			}
 			databasePlanMap[plan.PlanID] = sharedDbPlan
-
+		} else if plan.PlanName == "perinstance" {
+			perinstancePlan, err := perinstance.GetPlanFactory(plan.PlanID, plan.Parameters)
+			if err != nil {
+				return nil, err
+			}
+			databasePlanMap[plan.PlanID] = perinstancePlan
 		} else {
 			return nil, fmt.Errorf("No plan named %s exists", plan.PlanName)
 		}
