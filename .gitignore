@@ -7,3 +7,7 @@ data/conf.json
 debug.test
 resources/
 stardog-service-broker
+coverage.out
+data/conf.cf.json
+stardog-service-broker.zip
+tile-history.yml
