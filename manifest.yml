@@ -1,9 +1,11 @@
 ---
 applications:
   - name: stardog-service-broker
-    command: service-broker data/conf.json
+    command: service-broker data/conf.cf.json
     buildpack: https://github.com/cloudfoundry/go-buildpack.git
     memory: 512MB
     instances: 1
     path: .
+    services:
+    - stardog-mysql
 

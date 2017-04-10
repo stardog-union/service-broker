@@ -5,6 +5,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"os"
+	"reflect"
 	"strings"
 
 	// Load the mysql driver
@@ -12,8 +14,15 @@ import (
 	"github.com/stardog-union/service-broker/broker"
 )
 
+var (
+	MYSQL_SERVICE_TYPE_ENV = "MYSQL_SERVICE_TYPE"
+	MYSQL_SERVICE_NAME_ENV = "MYSQL_SERVICE_NAME"
+	MYSQL_PLAN_NAME_ENV    = "MYSQL_PLAN_NAME"
+)
+
 type mysqlNewParameters struct {
 	UseVCap       bool   `json:"use_cap"`
+	ServiceType   string `json:"service_type"`
 	ServiceName   string `json:"service_name"`
 	PlanName      string `json:"plan_name"`
 	SQLDriverName string `json:"sql_driver_name"`
@@ -90,17 +99,42 @@ func createMetaDatabase(logger broker.SdLogger, driverName string, contactString
 	return nil
 }
 
-func getVCAPPlan(serviceName string, planName string) (string, string, error) {
+func getValueSearchPath(defaultValue string, parameterVal string, envVarName string) string {
+	value := defaultValue
+	if parameterVal != "" {
+		value = parameterVal
+	}
+	e := os.Getenv(envVarName)
+	if e != "" {
+		value = e
+	}
+	return value
+}
+
+func getVCAPPlan(logger broker.SdLogger, serviceType string, serviceName string, planType string) (string, string, error) {
 	vcap, err := broker.GetVCAPServices()
 	if err != nil {
 		return "", "", err
 	}
-	serviceList, exists := vcap[serviceName]
+
+	logger.Logf(broker.DEBUG, "Parsing VCAP services for service type %s, service name %s, and plan type %s", serviceType, serviceName, planType)
+	serviceType = getValueSearchPath("p-mysql", serviceType, MYSQL_SERVICE_TYPE_ENV)
+	serviceName = getValueSearchPath("", serviceName, MYSQL_SERVICE_NAME_ENV)
+	planType = getValueSearchPath("", planType, MYSQL_PLAN_NAME_ENV)
+
+	serviceList, exists := vcap[serviceType]
 	if !exists {
+		logger.Logf(broker.ERROR, "Service %s not found", serviceType)
 		return "", "", fmt.Errorf("No VCAP services exist")
 	}
+	logger.Logf(broker.DEBUG, "Found service type %s", serviceType)
+	logger.Logf(broker.DEBUG, "Looking for service %s with plan %s", serviceName, planType)
 	for _, service := range serviceList {
-		if service.Plan == planName {
+		logger.Logf(broker.DEBUG, "Found service %s with plan %s", service.Name, service.Plan)
+		// If no specific name or plan is used we pick the first one
+		if (serviceName == "" || service.Name == serviceName) &&
+			(planType == "" || service.Plan == planType) {
+			logger.Logf(broker.DEBUG, "Using the plan %s %s", service.Plan, service.Name)
 			creds := service.Credentials
 			username, ok := creds["username"].(string)
 			if !ok {
@@ -118,12 +152,12 @@ func getVCAPPlan(serviceName string, planName string) (string, string, error) {
 			if !ok {
 				return "", "", fmt.Errorf("The name field in the VCAP_SERVICES is not a string")
 			}
-			port, ok := creds["port"].(int)
+			port, ok := creds["port"].(float64)
 			if !ok {
-				return "", "", fmt.Errorf("The port field in the VCAP_SERVICES is not an integer")
+				return "", "", fmt.Errorf("The port field in the VCAP_SERVICES is not an integer %s", reflect.TypeOf(creds["port"]).Kind().String())
 			}
 			// username:password@protocol(address)/dbname?param=value
-			uri := fmt.Sprintf("%s:%s@tcp(%s:%d)/", username, password, hostname, port)
+			uri := fmt.Sprintf("%s:%s@tcp(%s:%d)/", username, password, hostname, int(port))
 			return uri, dbName, nil
 		}
 	}
@@ -148,7 +182,7 @@ func NewMySQLStore(BrokerID string, logger broker.SdLogger, parameters interface
 	var uri string
 	var dbName string
 	if mysqlParams.UseVCap {
-		uri, dbName, err = getVCAPPlan(mysqlParams.ServiceName, mysqlParams.PlanName)
+		uri, dbName, err = getVCAPPlan(logger, mysqlParams.ServiceType, mysqlParams.ServiceName, mysqlParams.PlanName)
 		if err != nil {
 			return nil, err
 		}

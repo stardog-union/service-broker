@@ -115,11 +115,11 @@ func main() {
 		store, err = storesql.NewMySQLStore(conf.BrokerID, logger, conf.Storage.Parameters)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error setting up the data store: %s\n", err)
-			os.Exit(3)
+			os.Exit(4)
 		}
 	} else {
 		fmt.Fprintf(os.Stderr, "The datastore %s is not supported.\n", conf.Storage.Type)
-		os.Exit(3)
+		os.Exit(5)
 	}
 
 	clientFactory := broker.NewClientFactory(logger)
