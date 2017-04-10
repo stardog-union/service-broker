@@ -1,16 +1,15 @@
 ---
 name: stardog-service-broker
-icon_file: resources/icon.png
+icon_file: icon.png
 label: Stardog Knowledge Graph
 description: A service broker for Stardog
 # metadata_version: 1.8                 # Optional, defaults to 1.5
 
 # Global defaults (all optional)
 #
-org: stardog
-space: spacedog
-apply_open_security_group: true         # Apply open security group, default: false
-enable_global_access_to_plans: true 
+#org: stardog
+#space: spacedog
+apply_open_security_group: true
 
 # Specify the packages to be included in your tile.
 # The format of the section to include depends on the type
@@ -23,9 +22,10 @@ packages:
 - name: stardog-service-broker
   type: app-broker
   label: Stardog Knowledge Graph
+  enable_global_access_to_plans: true
   manifest:
     path: stardog-service-broker.zip
-    command: service-broker data/conf.cf.json
+    command: service-broker tile/conf.cf.json
     buildpack: https://github.com/cloudfoundry/go-buildpack.git
     memory: 256MB
     instances: 1
