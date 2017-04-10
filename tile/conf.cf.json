@@ -1,0 +1,16 @@
+{
+  "broker_id": "stardog-service-0A48E1D9-DCC9-4A61-8677-CB10B3C05512",
+  "plans": [
+    {
+      "name": "perinstance",
+      "id": "973F5836-4886-4755-B346-95E343F9113A"
+    }
+  ],
+  "storage": {
+    "type": "sql",
+    "parameters": {
+      "use_cap": true
+    }
+  },
+  "log_level": "DEBUG"
+}

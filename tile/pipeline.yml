@@ -1,0 +1,292 @@
+---
+resources:
+- name: dockerfile-repo
+  type: git
+  source:
+    paths: [ "ci/Dockerfile" ]
+    branch: master
+    uri: http://github.com/ForgeRock/forgerock-tile.git
+
+- name: ci-docker-image
+  type: docker-image
+  source:
+    repository: buzztroll/pcf-image-builder
+    email: {{docker-hub-email}}
+    username: {{docker-hub-username}}
+    password: {{docker-hub-password}}
+
+- name: stardog-broker-repo
+  type: git
+  source:
+    branch: feature/tile
+    uri: http://github.com/stardog-union/service-broker.git
+
+- name: stardog-broker-tile
+  type: s3
+  source:
+    bucket: {{s3-bucket}}
+    region_name: {{s3-region}}
+    regexp: .*-(?P<version>.*)\.pivotal
+    access_key_id: {{s3-access-key}}
+    secret_access_key: {{s3-secret}}
+
+- name: tile-history
+  type: s3
+  source:
+    bucket: {{s3-bucket}}
+    region_name: {{s3-region}}
+    regexp: tile\-history-(?P<version>.*)\.yml
+    access_key_id: {{s3-access-key}}
+    secret_access_key: {{s3-secret}}
+
+- name: pcf-environment
+  type: pool
+  source:
+    branch: master
+    pool: service-broker
+    private_key: {{github-pool-private-key}}
+    uri: git@github.com:stardog-union/concourse-locks
+
+jobs:
+
+- name: build-docker
+  plan:
+  - get: dockerfile-repo
+    trigger: true
+  - put: ci-docker-image
+    params:
+      build: dockerfile-repo/ci
+
+- name: build-tile
+  plan:
+  - aggregate:
+    - get: ci-docker-image
+      passed: [ build-docker ]
+      trigger: true
+    - get: stardog-broker-repo
+      trigger: true
+    - get: tile-history
+      trigger: false
+  - task: build-tile
+    image: ci-docker-image
+    config:
+      platform: linux
+      inputs:
+      - name: stardog-broker-repo
+      - name: tile-history
+      outputs:
+      - name: build-dir
+      run:
+        path: sh
+        args:
+        - -exc
+        - |
+          ls
+          cd stardog-broker-repo/
+          ls
+          cd tile
+          ./make-zip.sh
+          cd ../..
+          cp tile-history/tile-history-*.yml build-dir/tile-history.yml
+          cp stardog-broker-repo//tile/* build-dir/
+          cd build-dir
+          tile build
+          VERSION=`grep '^version:' tile-history.yml | sed 's/^version: //'`
+          HISTORY="tile-history-${VERSION}.yml"
+          mv tile-history.yml tile-history-${VERSION}.yml
+  - aggregate:
+    - put: tile-history
+      params:
+        file: build-dir/tile-history-*.yml
+    - put: stardog-broker-tile
+      params:
+        file: build-dir/product/*.pivotal
+
+- name: claim-pcf
+  plan:
+  - aggregate:
+    - get: ci-docker-image
+      passed: [ build-tile ]
+      trigger: true
+    - get: stardog-broker-tile
+      passed: [ build-tile ]
+      trigger: true
+    - get: stardog-broker-repo
+      passed: [ build-tile ]
+      trigger: true
+    - put: pcf-environment
+      params:
+        acquire: true
+
+- name: deploy-tile
+  plan:
+  - aggregate:
+    - get: ci-docker-image
+      passed: [ build-docker ]
+      trigger: true
+    - get: pcf-environment
+      passed: [ claim-pcf ]
+      trigger: true
+    - get: stardog-broker-tile
+      passed: [ build-tile ]
+      trigger: true
+    - get: stardog-broker-repo
+      trigger: true
+    - get: tile-history
+      trigger: false
+  - task: setup-metadata
+    image: ci-docker-image
+    config:
+      platform: linux
+      inputs:
+      - name: stardog-broker-tile
+      - name: tile-history
+      outputs:
+      - name: pcfdir
+      run:
+        path: sh
+        args:
+        - -exc
+        - |
+          OUTPUT=pcfdir/metadata
+          echo "---" > $OUTPUT
+          echo "opsmgr:" >> $OUTPUT
+          echo "  url: {{opsmgr-url}}" >> $OUTPUT
+          echo "  username: {{opsmgr-username}}" >> $OUTPUT
+          echo "  password: {{opsmgr-password}}" >> $OUTPUT
+          cp stardog-broker-tile/* pcfdir/
+          cp tile-history/* pcfdir/
+  - task: deploy-tile
+    image: ci-docker-image
+    config:
+      platform: linux
+      inputs:
+      - name: pcfdir
+      - name: stardog-broker-tile
+      - name: stardog-broker-repo
+      run:
+        path: stardog-broker-repo/tile/deploy-tile.sh
+        args:
+          - stardog-broker-tile
+          - pcfdir/metadata
+    on_failure:
+      aggregate:
+      - put: pcf-environment
+        params:
+          release: pcf-environment
+
+- name: test-tile
+  plan:
+  - aggregate:
+    - get: pcf-environment
+      passed: [ deploy-tile ]
+      trigger: true
+    - get: stardog-broker-tile
+      passed: [ build-tile ]
+      trigger: true
+    - get: ci-docker-image
+      passed: [ build-docker ]
+      trigger: true
+    - get: stardog-broker-repo
+      passed: [ deploy-tile ]
+      trigger: true
+  - task: setup-metadata
+    image: ci-docker-image
+    config:
+      platform: linux
+      inputs:
+      - name: stardog-broker-tile
+      outputs:
+      - name: pcfdir
+      run:
+        path: sh
+        args:
+        - -exc
+        - |
+          OUTPUT=pcfdir/metadata
+          echo "---" > $OUTPUT
+          echo "opsmgr:" >> $OUTPUT
+          echo "  url: {{opsmgr-url}}" >> $OUTPUT
+          echo "  username: {{opsmgr-username}}" >> $OUTPUT
+          echo "  password: {{opsmgr-password}}" >> $OUTPUT
+          cp stardog-broker-tile/* pcfdir/
+  - task: test-cf
+    image: ci-docker-image
+    config:
+      platform: linux
+      inputs:
+      - name: pcfdir
+      - name: stardog-broker-repo
+      run:
+        path: stardog-broker-repo/tile/test-tile.sh
+        args:
+          - stardog-broker-repo
+          - {{stardog-url}}
+          - {{stardog-password}}
+          - {{cf-org}}
+          - {{cf-space}}
+          - pcfdir/metadata
+    on_failure:
+      aggregate:
+      - put: pcf-environment
+        params:
+          release: pcf-environment
+
+- name: remove-tile
+  plan:
+  - aggregate:
+    - get: ci-docker-image
+      passed: [ build-docker ]
+      trigger: true
+    - get: pcf-environment
+      passed: [ test-tile ]
+      trigger: true
+    - get: stardog-broker-tile
+      trigger: true
+    - get: stardog-broker-repo
+      passed: [ test-tile ]
+      trigger: true
+    - get: tile-history
+      trigger: false
+  - task: setup-metadata
+    image: ci-docker-image
+    config:
+      platform: linux
+      inputs:
+      - name: stardog-broker-tile
+      - name: tile-history
+      outputs:
+      - name: pcfdir
+      run:
+        path: sh
+        args:
+        - -exc
+        - |
+          OUTPUT=pcfdir/metadata
+          echo "---" > $OUTPUT
+          echo "opsmgr:" >> $OUTPUT
+          echo "  url: {{opsmgr-url}}" >> $OUTPUT
+          echo "  username: {{opsmgr-username}}" >> $OUTPUT
+          echo "  password: {{opsmgr-password}}" >> $OUTPUT
+  - task: remove-tile
+    image: ci-docker-image
+    config:
+      platform: linux
+      inputs:
+      - name: pcfdir
+      - name: stardog-broker-tile
+      - name: stardog-broker-repo
+      run:
+        path: stardog-broker-repo/tile/remove-tile.sh
+        args:
+          - stardog-broker-tile
+          - pcfdir/metadata
+
+- name: release-pcf
+  plan:
+  - get: pcf-environment
+    passed: [ remove-tile ]
+    trigger: true
+  - put: pcf-environment
+    params:
+      release: pcf-environment
