@@ -77,23 +77,10 @@ jobs:
       outputs:
       - name: build-dir
       run:
-        path: sh
+        path: stardog-broker-repo/tile/build-tile.sh
         args:
-        - -exc
-        - |
-          ls
-          cd stardog-broker-repo/
-          ls
-          cd tile
-          ./make-zip.sh
-          cd ../..
-          cp tile-history/tile-history-*.yml build-dir/tile-history.yml
-          cp stardog-broker-repo//tile/* build-dir/
-          cd build-dir
-          tile build
-          VERSION=`grep '^version:' tile-history.yml | sed 's/^version: //'`
-          HISTORY="tile-history-${VERSION}.yml"
-          mv tile-history.yml tile-history-${VERSION}.yml
+          - stardog-broker-repo
+          - tile-history
   - aggregate:
     - put: tile-history
       params:
