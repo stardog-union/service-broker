@@ -12,8 +12,21 @@ METADATA_FILE=$6
 cp $METADATA_FILE .
 echo "Testing the tile..."
 
+pcf cf-info
+echo "Products in this org"
+pcf products
+
+set +e
+cf marketplace
+set -e
 echo "pcf target -o $ORG -s $SPACE"
 pcf target -o $ORG -s $SPACE
+echo "Products in this new org"
+pcf products
+set +e
+cf marketplace
+set -e
+
 
 export CF_DOMAIN_NAME=`pcf cf-info | grep apps_domain | cut -d" " -f3`
 
