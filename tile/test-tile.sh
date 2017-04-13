@@ -33,5 +33,4 @@ export CF_DOMAIN_NAME=`pcf cf-info | grep apps_domain | cut -d" " -f3`
 set +e
 python ${STARDOG_SERVICE_REPO_DIR}/tile/test.py
 rc=$?
-pcf target -o $ORG -s $SPACE
 exit $rc
