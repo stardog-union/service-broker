@@ -128,18 +128,24 @@ def test_one():
         org_space.set_target()
         org_space.create_service()
 
-        test_app = TestApp(repo_dir, org_space.get_service_name(), domain_name)
-        test_app.push_test_app()
-        vcap_doc = test_app.get_test_vcap()
-        print("%s" % str(vcap_doc))
-        found = False
-        for s_list in vcap_doc['Stardog']:
-            if s_list['name'] == org_space.get_service_name():
-                found = True
-                if s_list['credentials']['url'] != stardog_url:
-                    raise Exception("The stardog url doesn't match")
-        if not found:
-            raise Exception("The service name %s was not in the vcap" % org_space.get_service_name())
+        try:
+            test_app = TestApp(repo_dir, org_space.get_service_name(), domain_name)
+            test_app.push_test_app()
+            try:
+                vcap_doc = test_app.get_test_vcap()
+                print("%s" % str(vcap_doc))
+                found = False
+                for s_list in vcap_doc['Stardog']:
+                    if s_list['name'] == org_space.get_service_name():
+                        found = True
+                        if s_list['credentials']['url'] != stardog_url:
+                            raise Exception("The stardog url doesn't match")
+                if not found:
+                    raise Exception("The service name %s was not in the vcap" % org_space.get_service_name())
+            finally:
+                test_app.unbind()
+        finally:
+            org_space.delete_service()
     finally:
         org_space.clean_up()
 
