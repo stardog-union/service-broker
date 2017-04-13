@@ -1,0 +1,21 @@
+docker-hub-email: buzztroll@gmail.com
+docker-hub-username: buzztroll
+docker-hub-password: xxxxxxxx
+s3-bucket: stardog-pcf
+s3-region: us-west-2
+s3-access-key: xxxxxxxxxx
+s3-secret: xxxxxxxxxxxxxxxxxxxx
+opsmgr-url: https://opsman.pie-21.cfplatformeng.com
+opsmgr-username: admin
+opsmgr-password: xxxxxxxxxxxxxxxx
+stardog-url: http://buzz4tilesdelb-1058783714.us-west-2.elb.amazonaws.com:5821
+stardog-password: xxxxxxxxxxxx
+cf-org: stardog
+cf-space: spacedog
+github-pool-private-key: |
+  -----BEGIN RSA PRIVATE KEY-----
+  skdjfhskjhfK3khKJHDKFHSKHFKSJHKFJHSDKfNfSMDNfSEFJSKDHKFJHSDKFHSD
+  skdjfhskjhfK3khKJHDKFHSKHFKSJHKFJHSDKfNfSMDNfSEFJSKDHKFJHSDKFHSD
+  skdjfhskjhfK3khKJHDKFHSKHFKSJHKFJHSDKfNfSMDNfSEFJSKDHKFJHSDKFHSD
+  skdjfhskjhfK3khKJHDKFHSKHFKSJHKFJHSDKfNfSMDNfSEFJSKDHKFJHSDKFHSD
+  -----END RSA PRIVATE KEY-----
