@@ -1,7 +1,7 @@
 ---
 name: stardog-service-broker
 icon_file: icon.png
-label: Stardog Knowledge Graph
+label: Stardog
 description: A service broker for Stardog
 # metadata_version: 1.8                 # Optional, defaults to 1.5
 
@@ -40,7 +40,7 @@ forms:
   properties:
   - name: MYSQL_SERVICE_TYPE
     type: string
-    label: The type of the mysql service for storing metadata
+    label: The mysql service for storing metadata
     default: p-mysql
   - name: MYSQL_PLAN_NAME
     type: string
