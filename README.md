@@ -51,31 +51,60 @@ JSON document with the following fields.
 
 #### Plans
 
-Currently the only plan implemented is the shared_database_plan.  This
-plan uses a single Stardog service.  When Cloud Foundry requests a new
+Currently two plans are implemented.
+
+##### shared_database_plan.
+
+This
+plan uses a single Stardog service which must be configured when this
+service broker is started.  When Cloud Foundry requests a new
 service instance from the broker this plan will create a new database.
 When Cloud Foundry then requests that an application be bound to a
 service instance this plan will create a new user and grant it access
-to the associated database.
+to the associated database.  The plans configuration must contain the
+following fields:
 
 | Field             | Type      | Description
 | -----             | ----      | ------------ |
 | stardog_url*      | string    | The URL to the Stardog service that will be used by the plan to create databases. |
 | admin_username*   | string    | The administrator user name for the Stardog service. |
 | admin_password*   | string    | The administrator password for the Stardog service. |
+
+##### perinstance
+
+The perinstance plan allows a user to provide Stardog server information
+when the service instance is created.  This differs from *shared_database_plan*
+in that many different Stardog servers can be managed by this broker.
+This plan takes no custom parameters.
 
 #### Storage Drivers
 
-Currently the only valid storage driver is *stardog*.  This driver uses
+There are currently two storage drivers
+
+##### Stardog storage
+This driver uses
 a Stardog database for storing the metadata that the service broker
-needs to be effective.  It can be the same Stardog server that is used
-with a plan.
+needs to be persisted.  It can be the same Stardog server that is used
+with the shared_database_plan.
 
 | Field             | Type      | Description
 | -----             | ----      | ------------ |
 | stardog_url*      | string    | The URL to the Stardog service that will be used by the plan to create databases. |
 | admin_username*   | string    | The administrator user name for the Stardog service. |
 | admin_password*   | string    | The administrator password for the Stardog service. |
+
+##### SQL
+This uses a SQL database for storing metadata.
+
+| Field             | Type      | Description
+| -----             | ----      | ------------ |
+| use_cap*          | boolean   | Get the database information from the VCAP_SERVICES environment variable. |
+| service_type*     | string    | The specific type of database to use. eg: mysql |
+| service_name      | string    | The name of the service to find in the VCAP_SERVICE environment variable.  Used when use_vcap is true. |
+| plan_name         | string    | The name of the plan to find in the VCAP_SERVICES environment variable.  Used when use_vcap is true. |
+| sql_driver_name   | string    ||
+| contact_string    | string    | The contact string to access the SQL database.  Used when use_vcap is false. |
+| database_name     | string    | The name of the database to use for storing infomation.  Used when use_vcap is false. |
 
 ## Running
 
