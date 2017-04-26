@@ -1,7 +1,7 @@
 ---
 name: stardog-service-broker
 icon_file: icon.png
-label: Stardog
+label: Stardog Service Broker for PCF
 description: A service broker for Stardog
 # metadata_version: 1.8                 # Optional, defaults to 1.5
 
