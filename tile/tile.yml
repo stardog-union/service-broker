@@ -9,7 +9,7 @@ description: A service broker for Stardog
 #
 #org: stardog
 #space: spacedog
-apply_open_security_group: true
+apply_open_security_group: false
 
 # Specify the packages to be included in your tile.
 # The format of the section to include depends on the type

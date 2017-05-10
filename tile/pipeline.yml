@@ -18,7 +18,7 @@ resources:
 - name: stardog-broker-repo
   type: git
   source:
-    branch: feature/tile
+    branch: feature/metadata_secfix1
     uri: http://github.com/stardog-union/service-broker.git
 
 - name: stardog-broker-tile
