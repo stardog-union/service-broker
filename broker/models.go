@@ -24,15 +24,27 @@ type CatalogResponse struct {
 	Services []CatalogService `json:"services"`
 }
 
+// CatalogMetadata is the community driven stadard catalog response for providing
+// friendly information.
+type CatalogMetadata struct {
+	DisplayName         string `json:"displayName"`
+	ImageURL            string `json:"imageUrl"`
+	LongDescription     string `json:"longDescription"`
+	ProviderDisplayName string `json:"providerDisplayName"`
+	DocumentationURL    string `json:"documentationUrl"`
+	SupportURL          string `json:"supportUrl"`
+}
+
 // CatalogService is a catalog entry that describes one of the brokers
 // service offerings.  This broker only offers a single service.
 type CatalogService struct {
-	Name           string        `json:"name"`
-	ID             string        `json:"id"`
-	Description    string        `json:"description"`
-	Bindable       bool          `json:"bindable"`
-	PlanUpdateable bool          `json:"plan_updateable, omitempty"`
-	Plans          []ServicePlan `json:"plans"`
+	Name           string          `json:"name"`
+	ID             string          `json:"id"`
+	Description    string          `json:"description"`
+	Bindable       bool            `json:"bindable"`
+	PlanUpdateable bool            `json:"plan_updateable, omitempty"`
+	Plans          []ServicePlan   `json:"plans"`
+	Metadata       CatalogMetadata `json:"metadata, omitempty"`
 }
 
 // ServicePlan is a catalog entry that describes a plan.  Currently the
