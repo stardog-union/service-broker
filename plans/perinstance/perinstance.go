@@ -99,7 +99,7 @@ func (df *perInstancePlanFactory) PlanName() string {
 }
 
 func (df *perInstancePlanFactory) PlanDescription() string {
-	return "Associate each instance with an existing Stardog knowledge graph."
+	return "Associate each instance with an existing Stardog Knowledge Graph."
 }
 
 func (df *perInstancePlanFactory) PlanID() string {
