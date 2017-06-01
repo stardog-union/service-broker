@@ -70,7 +70,7 @@ func (c *ControllerImpl) Catalog(w http.ResponseWriter, r *http.Request) {
 	catalogService := CatalogService{
 		Name:           "Stardog",
 		ID:             c.BrokerID,
-		Description:    "Provides access to a Stardog knowledge graph",
+		Description:    "Provides access to a Stardog Knowledge Graph",
 		Bindable:       true,
 		PlanUpdateable: false,
 		Metadata:       metadata,
