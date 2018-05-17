@@ -19,7 +19,7 @@ apply_open_security_group: false
 # https://github.com/cf-platform-eng/tile-generator/blob/master/README.md
 #
 packages:
-- name: stardog-service-broker
+- name: stardog_service_broker
   type: app-broker
   label: Stardog Knowledge Graph
   enable_global_access_to_plans: true
